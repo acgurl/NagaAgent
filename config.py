@@ -5,6 +5,7 @@ NagaAgent 配置系统 - 基于Pydantic实现类型安全和验证
 import os
 import platform
 import json
+import yaml
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, List, Dict, Any
@@ -528,25 +529,46 @@ class NagaConfig(BaseModel):
         }
 
 
-# 创建全局配置实例 - 从JSON文件加载
+# 创建全局配置实例 - 从YAML或JSON文件加载
 def load_config():
     """加载配置"""
-    config_path = "config.json"
-    if os.path.exists(config_path):
+    # 首先尝试加载YAML配置文件
+    yaml_config_path = "config.yaml"
+    json_config_path = "config.json"
+    
+    config_path = None
+    config_data = None
+    
+    # 优先加载YAML配置文件，如果不存在则加载JSON配置文件
+    if os.path.exists(yaml_config_path):
         try:
-            with open(config_path, 'r', encoding='utf-8') as f:
+            with open(yaml_config_path, 'r', encoding='utf-8') as f:
+                config_data = yaml.safe_load(f)
+            config_path = yaml_config_path
+        except Exception as e:
+            print(f"警告：加载 {yaml_config_path} 失败: {e}")
+    elif os.path.exists(json_config_path):
+        try:
+            with open(json_config_path, 'r', encoding='utf-8') as f:
                 config_data = json.load(f)
-            # 设置环境变量
-            setup_environment()
+            config_path = json_config_path
+        except Exception as e:
+            print(f"警告：加载 {json_config_path} 失败: {e}")
+    else:
+        print(f"警告：配置文件 {yaml_config_path} 或 {json_config_path} 不存在，使用默认配置")
+    
+    # 设置环境变量
+    setup_environment()
+    
+    # 如果成功加载配置数据，则使用它创建配置对象
+    if config_data:
+        try:
             return NagaConfig(**config_data)
         except Exception as e:
-            print(f"警告：加载 {config_path} 失败: {e}")
+            print(f"警告：配置验证失败: {e}")
             print("使用默认配置")
-    else:
-        print(f"警告：配置文件 {config_path} 不存在，使用默认配置")
     
-    # 设置环境变量并返回默认配置
-    setup_environment()
+    # 返回默认配置
     return NagaConfig()
 
 config = load_config()

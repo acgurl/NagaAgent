@@ -105,8 +105,14 @@ docker run -d \
 
 ### ⚙️ 配置文件
 
+NagaAgent支持YAML和JSON两种格式的配置文件，优先使用YAML格式。
+
 1. 复制配置模板：
    ```bash
+   # 使用YAML格式（推荐）
+   cp config.yaml.example config.yaml
+   
+   # 或使用JSON格式
    cp config.json.example config.json
    ```
 
